@@ -6,7 +6,10 @@ from __future__ import unicode_literals
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
-from utils.date_time import now_timestamp10
+from utils.date_time import (
+    time10,
+    time13
+)
 
 
 class UserManager(BaseUserManager):
@@ -73,8 +76,8 @@ class SYSUser(AbstractUser):
     is_superuser = models.BooleanField(default=False, verbose_name='是否为超级管理员')
     email = models.CharField(max_length=100, default='', verbose_name='邮箱')
     phone = models.CharField(max_length=11, default='', verbose_name='手机号')
-    reg_time = models.IntegerField(default=now_timestamp10, verbose_name='注册时间')
-    last_login = models.IntegerField(default=now_timestamp10, verbose_name='最后登录时间')
+    reg_time = models.IntegerField(default=time10, verbose_name='注册时间')
+    last_login = models.IntegerField(default=time10, verbose_name='最后登录时间')
     login_ip = models.CharField(max_length=30, default='', verbose_name='登录IP')
     avatar = models.CharField(max_length=100, default='', verbose_name='头像')
     order = models.IntegerField(default=10000, verbose_name='排序')
@@ -94,7 +97,7 @@ class SYSGroup(models.Model):
     name = models.CharField(max_length=30, unique=True, default='', verbose_name='组名')
     desc = models.CharField(max_length=100, default='', verbose_name='组描述')
     creator = models.ForeignKey(SYSUser, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
-    created_time = models.IntegerField(default=now_timestamp10, verbose_name='创建时间')
+    created_time = models.IntegerField(default=time10, verbose_name='创建时间')
     order = models.IntegerField(default=10000, verbose_name='组排序')
 
     class Meta:
@@ -124,7 +127,7 @@ class SYSRole(models.Model):
     desc = models.CharField(max_length=100, default='', verbose_name='角色描述')
     order = models.IntegerField(default=10000, verbose_name='角色排序')
     creator = models.ForeignKey(SYSUser, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
-    create_time = models.IntegerField(default=now_timestamp10, verbose_name='创建时间')
+    create_time = models.IntegerField(default=time10, verbose_name='创建时间')
 
     class Meta:
         db_table = 'sys_role'
@@ -166,7 +169,7 @@ class SYSMenu(models.Model):
     order = models.IntegerField(default=10000, verbose_name='菜单排序')
     status = models.BooleanField(default=True, verbose_name='菜单状态')
     creator = models.ForeignKey(SYSUser, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
-    create_time = models.IntegerField(default=now_timestamp10, verbose_name='创建时间')
+    create_time = models.IntegerField(default=time10, verbose_name='创建时间')
 
     class Meta:
         db_table = 'sys_menu'
@@ -198,3 +201,22 @@ class SYSGroupRole(models.Model):
     class Meta:
         db_table = 'sys_group_role'
         unique_together = ('group', 'role')
+
+
+class SYSLog(models.Model):
+    """
+    系统日志
+    """
+    id = models.AutoField(primary_key=True, verbose_name='日志ID')
+    ip = models.CharField(max_length=15, default='', verbose_name='ip')
+    path = models.CharField(max_length=255, default='', verbose_name='路径')
+    method = models.CharField(max_length=10, default='', verbose_name='方法')
+    body = models.TextField(default='', verbose_name='参数')
+    code = models.TextField(default=0, verbose_name='错误码')
+    message = models.TextField(default=0, verbose_name='错误消息')
+    creator = models.ForeignKey(SYSUser, null=True, on_delete=models.SET_NULL, verbose_name='创建者')
+    create_time = models.BigIntegerField(default=time13, db_index=True, verbose_name='创建时间')
+
+    class Meta:
+        db_table = 'sys_log'
+        ordering = ['-create_time']

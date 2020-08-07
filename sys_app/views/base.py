@@ -1,12 +1,15 @@
 # *-* coding: utf-8 *-*
 from rest_framework import viewsets
+from rest_framework_mongoengine import viewsets as Mongoviewsets
+from rest_framework.views import APIView
+from rest_framework.decorators import action
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from utils import exceptions
 from utils.filters import ParamsQueryFilter
 
 
-class BaseViewSet(viewsets.ModelViewSet):
+class ViewSetMixin:
     """
     基本视图集
     """
@@ -32,7 +35,7 @@ class BaseViewSet(viewsets.ModelViewSet):
             if k not in ['page', 'limit'] and query_params[k]:
                 params[k] = query_params[k]
         return params
-
+        
     def get_object(self):
 
         queryset = self.filter_queryset(self.get_queryset())
@@ -44,7 +47,7 @@ class BaseViewSet(viewsets.ModelViewSet):
         print('kwargs: ', self.kwargs)
         obj = queryset.filter(**filter_kwargs).first()
         if not obj:
-            self.response.Fail(message='记录不存在')
+            raise self.response.Fail(message='记录不存在')
 
         self.check_object_permissions(self.request, obj)
 
@@ -60,7 +63,7 @@ class BaseViewSet(viewsets.ModelViewSet):
         print(pk_attr, pk_value)
         queryset = self.get_queryset().filter(**{pk_attr: pk_value})
         if not queryset.exists():
-            self.response.Fail(message='记录不存在')
+            raise self.response.Fail(message='记录不存在')
 
     def is_valid(self, serializer):
         """
@@ -76,6 +79,10 @@ class BaseViewSet(viewsets.ModelViewSet):
                 message += str(errors[field][0])+'\n'
             raise self.response.Fail(message=message)
 
+    def before_list_return(self, data):
+        #extra handle before return data
+        return data
+    
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -90,16 +97,22 @@ class BaseViewSet(viewsets.ModelViewSet):
             data = self.get_paginated_response(serializer.data)
         else:
             data = self.get_serializer(instance=queryset, many=True).data
+        
+        data = self.before_list_return(data)
         print('List data: ', data)
         raise self.response.Success(data=data)
 
+    def before_retrieve_return(self, data):
+        #extra handle before return data
+        return data
+    
     def retrieve(self, request, pk=None, *args, **kwargs):
-        self.check_pk_is_exist(pk)
-
         instance = self.get_object()
         serializer = self.get_serializer(instance=instance)
-        print('Retrieve data: ', serializer.data)
-        raise self.response.Success(data=serializer.data)
+        data = serializer.data
+        data = self.before_retrieve_return(data)
+        print('Retrieve data: ', data)
+        raise self.response.Success(data=data)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -110,9 +123,9 @@ class BaseViewSet(viewsets.ModelViewSet):
 
     def update(self, request, pk=None, *args, **kwargs):
         self.check_pk_is_exist(pk)
-
+        partial = kwargs.pop('partial', False)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=False)
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         self.is_valid(serializer)
         self.perform_update(serializer)
 
@@ -126,9 +139,63 @@ class BaseViewSet(viewsets.ModelViewSet):
             raise self.response.Success()
         raise self.response.Fail()
 
+    def condition_destroy(self, request, pk=None, delete_key='is_delete', *args, **kwargs):
+        """条件删除"""
+        self.check_pk_is_exist(pk)
 
-class AuthAPIViewSet(BaseViewSet):
+        rows = self.get_queryset().filter(pk=pk).update(**{delete_key: 1})
+        if rows > 0:
+            raise self.response.Success()
+        raise self.response.Fail()
+
+    def get_delete_ids(self, request):
+        """获取批量删除id"""
+        delete_ids = request.data.get('delete_ids', None)
+
+        if not delete_ids:
+            raise self.response.Fail()
+
+        return [int(_id.strip()) for _id in delete_ids.split(',')]
+
+    @action(methods=['delete'], detail=False)
+    def multiple_delete(self, request, *args, **kwargs):
+        """批量删除"""
+        btn_ids = self.get_delete_ids(request)
+        self.get_queryset().filter(id__in=btn_ids).delete()
+        raise self.response.Success()
+
+    def condtion_multiple_delete(self, request, delete_key='is_delete', *args, **kwargs):
+        """条件批量删除"""
+        btn_ids = self.get_delete_ids(request)
+        rows = self.get_queryset().filter(id__in=btn_ids).update(**{delete_key: 1})
+        if rows > 0:
+            raise self.response.Success()
+        raise self.response.Fail()
+
+
+class MongoAuthAPIViewSet(ViewSetMixin, Mongoviewsets.ModelViewSet):
     """
     带认证的视图集
+    """
+    authentication_classes = (JSONWebTokenAuthentication, )
+
+
+class AuthAPIViewSet(ViewSetMixin, viewsets.ModelViewSet):
+    """
+    带认证的视图集
+    """
+    authentication_classes = (JSONWebTokenAuthentication, )
+
+
+class BaseAPIView(APIView):
+    """
+    基本视图
+    """
+    response = exceptions
+
+
+class AuthAPIView(BaseAPIView):
+    """
+    带认证的视图
     """
     authentication_classes = (JSONWebTokenAuthentication, )

@@ -27,7 +27,7 @@ class Success(ExceptionBase):
     """
     返回成功
     """
-    def __init__(self, code=20000, message="OK", data=None):
+    def __init__(self, code=20000, message="成功", data=None):
         super(self.__class__, self).__init__(code, message, data)
 
 
@@ -35,7 +35,7 @@ class Fail(ExceptionBase):
     """
     返回失败
     """
-    def __init__(self, code=50000, message="fail", data=None):
+    def __init__(self, code=50000, message="失败", data=None):
         super(self.__class__, self).__init__(code, message, data)
 
 

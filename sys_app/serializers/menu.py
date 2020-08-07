@@ -53,7 +53,6 @@ class MenuSerializer(ContainCreatorModelSerializer):
 
     def get_children(self, obj):
         tree = {}
-        # print(self.context['view'].)
         data_list = list(SYSMenu.objects.filter(**self.menu_cond).values())
         for data in data_list:
             data['alwaysShow'] = data['always_show']

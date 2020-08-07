@@ -40,8 +40,14 @@ class RoleMenuSerializer(BaseModelSerializer):
         model = SYSRole
         fields = '__all__'
 
-    def get_menu(self, obj):
+    def get_menu(self, instance):
         queryset = SYSMenu.objects.filter(parent_id=0)
+
+        is_superuser = self.context['view'].request.user.is_superuser
+        if not is_superuser:
+            objs = SYSRoleMenu.objects.filter(role=instance)
+            queryset = queryset.filter(id__in=[obj.menu.id for obj in objs])
+
         return MenuSerializer(instance=queryset, many=True).data
 
     def update(self, instance, validated_data):

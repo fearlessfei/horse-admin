@@ -24,7 +24,7 @@ def jwt_response_payload_handler(token, user=None, request=None):
         'user_id': user.id,
         'username': user.username,
         'avatar': user.avatar,
-        'is_superuser': 1 if user.is_superuser else 0,
+        'is_superuser': True if user.is_superuser else False,
         'permission_codes': permission_codes
     }
     raise exceptions.Success(data=data, message='登录成功')

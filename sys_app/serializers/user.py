@@ -57,6 +57,7 @@ class UserSerializer(ContainCreatorModelSerializer):
 
         try:
             with transaction.atomic():
+                validated_data['avatar'] = 'https://wpimg.wallstcn.com/f778738c-e4f8-4870-b634-56703b4acafe.gif'
                 user_instance = User.objects.create_user(**validated_data)
                 # 批量创建用户角色
                 create_data_list = [

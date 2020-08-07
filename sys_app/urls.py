@@ -12,6 +12,7 @@ from sys_app.views.menu import MenuViewSet
 from sys_app.views.user_menu import UserMenuViewSet
 from sys_app.views.group import GroupViewSet
 from sys_app.views.group_user import GroupUserViewSet
+from sys_app.views.log import LogViewSet
 
 urlpatterns = [
     url(r'^user/login$', obtain_jwt_token),
@@ -26,5 +27,6 @@ router.register(r'role', RoleViewSet)
 router.register(r'menu', MenuViewSet)
 router.register(r'group/user', GroupUserViewSet)
 router.register(r'group', GroupViewSet)
+router.register(r'log', LogViewSet)
 
 urlpatterns += router.urls

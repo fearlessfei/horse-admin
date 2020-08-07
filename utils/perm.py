@@ -145,7 +145,7 @@ class HasPerm(object):
             user_id = request.user.id
             if not self.is_has_perm(user_id, self.perm_code):
                 raise PermissionDenied(message="您没有操作权限")
-            self.func(_self, request)
+            self.func(_self, request, *args, **kwargs)
 
         return perm_wrraper
 

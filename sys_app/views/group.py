@@ -19,7 +19,7 @@ class GroupViewSet(AuthAPIViewSet):
     def list(self, request, *args, **kwargs):
         super(self.__class__, self).list(request, *args, **kwargs)
 
-    @HasPerm(perm_code='sys_group_create')
+    @HasPerm(perm_code='sys:group:create')
     def create(self, request, *args, **kwargs):
         super(self.__class__, self).create(request, *args, **kwargs)
 
